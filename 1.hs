@@ -26,7 +26,19 @@ getMinDiffs t = getMinDiffsAcc (sortInTuple t) 0
 part1 :: [String] -> Int
 part1 input = getMinDiffs $ splitTupleList $ map processLine input
 
+
+count :: Eq a => [a] -> a -> Int
+count l x = length $ filter (== x) l
+
+similarity :: [Int] -> [Int] -> Int
+similarity x y = sum $ map (\x -> x * (count y x)) x
+
+part2 :: [String] -> Int
+part2 input = similarity x y
+    where 
+        (x, y) = splitTupleList $ map processLine input
+
 main :: IO ()
 main = do
     input <- readLines 1
-    printSolution (part1 input) 0
+    printSolution (part1 input) (part2 input)
