@@ -4,9 +4,10 @@ import System.IO
 
 input_dir :: String
 input_dir = "input/"
+format = ".txt"
 
 
-readInput i = readFile $ input_dir ++ show i
+readInput i = readFile $ input_dir ++ show i ++ format
 
 readLines i = do
     contents <- readInput i
