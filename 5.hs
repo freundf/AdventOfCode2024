@@ -14,23 +14,32 @@ part1 r u = sum $ map middle $ filter (isOrdered rules) updates
         rules = parseRules r
         updates = parseUpdates u    
 
-part2 r u = 0
+part2 r u = sum $ map middle $ map (orderUpdate rules) $ filter (\u -> not (isOrdered rules u)) updates
+    where 
+        rules = parseRules r
+        updates = parseUpdates u
 
-isOrdered :: [(Int, [Int])] -> [Int] -> Bool
-isOrdered r xs = isOrderedAcc (filterPred xs r) xs True
+orderUpdate :: [Rule] -> Update -> Update
+orderUpdate r u = sortBy (\x y -> compare (predLen x) (predLen y)) u
+    where 
+        predLen z = length $ getPred z rules
+        rules = filterRules u r
+
+isOrdered :: [Rule] -> Update -> Bool
+isOrdered r xs = isOrderedAcc (filterRules xs r) xs True
     where
         isOrderedAcc :: [(Int, [Int])] -> [Int] -> Bool -> Bool 
         isOrderedAcc _ _ False  = False
         isOrderedAcc _ [] acc   = acc    
-        isOrderedAcc r (x:xs) acc = isOrderedAcc (filterPred xs r) xs (acc && (getPred x r == []))
+        isOrderedAcc r (x:xs) acc = isOrderedAcc (filterRules xs r) xs (acc && (getPred x r == []))
 
 
-getPred :: Int -> [(Int, [Int])] -> [Int]
+getPred :: Int -> [Rule] -> [Int]
 getPred i = concat . map snd . filter ((== i) . fst)
 
-filterPred :: [Int] -> [(Int, [Int])] -> [(Int, [Int])]
-filterPred l = map filterList . filter (\(x, _) -> elem x l)
-    where filterList (y, ys) = (y, intersect l ys)
+filterRules :: Update -> [Rule] -> [Rule]
+filterRules u = map filterList . filter (\(x, _) -> elem x u)
+    where filterList (y, ys) = (y, intersect u ys)
 
 
 parseRules :: [String] -> [Rule]
