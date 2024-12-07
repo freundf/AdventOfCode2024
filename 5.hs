@@ -3,60 +3,53 @@ module Main where
 import Util
 import Data.List (sortBy, groupBy, intersect)
 import Data.List.Split (splitOn)
+import Data.Ord (comparing)
+import Data.Function (on)
 
 type Rule = (Int, [Int])
 type Update = [Int]
 
 
-part1 :: [String] -> [String] -> Int
-part1 r u = sum $ map middle $ filter (isOrdered rules) updates
-    where
-        rules = parseRules r
-        updates = parseUpdates u    
+part1 :: [Rule] -> [Update] -> Int
+part1 rules updates = sum $ map middle $ filter (isOrdered rules) updates
 
-part2 r u = sum $ map middle $ map (orderUpdate rules) $ filter (\u -> not (isOrdered rules u)) updates
-    where 
-        rules = parseRules r
-        updates = parseUpdates u
+part2 :: [Rule] -> [Update] -> Int
+part2 rules updates = sum $ map middle $ map (orderUpdate rules) $ filter (not . isOrdered rules) updates
 
 orderUpdate :: [Rule] -> Update -> Update
-orderUpdate r u = sortBy (\x y -> compare (predLen x) (predLen y)) u
+orderUpdate r u = sortBy (comparing predLen) u
     where 
         predLen z = length $ getPred z rules
         rules = filterRules u r
 
-isOrdered :: [Rule] -> Update -> Bool
-isOrdered r xs = isOrderedAcc (filterRules xs r) xs True
+isOrdered :: [Rule] -> Update -> Bool 
+isOrdered _ []              = True    
+isOrdered r (x:xs)
+    | getPred x rules == [] = isOrdered rules xs
+    | otherwise             = False
     where
-        isOrderedAcc :: [(Int, [Int])] -> [Int] -> Bool -> Bool 
-        isOrderedAcc _ _ False  = False
-        isOrderedAcc _ [] acc   = acc    
-        isOrderedAcc r (x:xs) acc = isOrderedAcc (filterRules xs r) xs (acc && (getPred x r == []))
-
+        rules = filterRules (x:xs) r
 
 getPred :: Int -> [Rule] -> [Int]
 getPred i = concat . map snd . filter ((== i) . fst)
 
 filterRules :: Update -> [Rule] -> [Rule]
-filterRules u = map filterList . filter (\(x, _) -> elem x u)
-    where filterList (y, ys) = (y, intersect u ys)
-
+filterRules update = map isectSnd . filter elemFst
+    where 
+        isectSnd (y, ys) = (y, intersect update ys)
+        elemFst (x, _) = elem x update
 
 parseRules :: [String] -> [Rule]
 parseRules = genPred . map parseRule
     where
-        parseRule = toTuple . map read . splitOn "|"
-            where toTuple [x, y] = (x, y)
+        parseRule = tuple . map read . splitOn "|"
+            where tuple [x, y] = (x, y)
 
         genPred = map combine . group' . sort'
             where
-                group' = groupBy (\(_, x) (_, y) -> x == y)
-                sort' = sortBy (\(_, x) (_, y) -> compare x y)
+                group' = groupBy ((==) `on` snd)
+                sort' = sortBy (comparing snd)
                 combine x = (snd $ head x, map fst x)
-
-       
-
-
 
 parseUpdates :: [String] -> [Update]
 parseUpdates = map parseUpdate
@@ -68,6 +61,6 @@ middle xs = xs !! (length xs `div` 2)
 main :: IO ()
 main = do
     input <- readLines 5
-    let [rules, updates] = splitOn [""] input
+    let (rules, updates) = (parseRules r, parseUpdates u) where [r, u] = splitOn [""] input
     printSolution (part1 rules updates) (part2 rules updates)
 
